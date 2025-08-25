@@ -32,7 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.kulishov.openweatherapp.R
 import ru.kulishov.openweatherapp.domain.model.SelectedCity
 import ru.kulishov.openweatherapp.domain.model.UiState
@@ -44,8 +43,8 @@ fun CityCardUI(
     onTap: () -> Unit
 ) {
     val curentForecastList = viewModel.weatherListCurrentDayWithDate.collectAsState()
-    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
-    val cityName = viewModel.cityName.collectAsState()
+    val uiState = viewModel.uiState.observeAsState(UiState.Loading)
+    val cityName = viewModel.cityName.observeAsState(SelectedCity(0, "", ""))
     Box(
         Modifier
             .fillMaxWidth()
@@ -152,7 +151,7 @@ fun CityCardUI(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
-                            if (showMinTemp&&curentForecastList.value.isNotEmpty()) {
+                            if (showMinTemp && curentForecastList.value.isNotEmpty()) {
                                 Log.d("Data", "nit empty")
                                 Text(
                                     "${curentForecastList.value[curentForecastList.value.size / 2].main.temp_min}°С",

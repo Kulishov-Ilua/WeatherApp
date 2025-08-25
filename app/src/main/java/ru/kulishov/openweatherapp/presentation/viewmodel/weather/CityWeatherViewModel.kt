@@ -12,13 +12,9 @@ import retrofit2.Retrofit
 import ru.kulishov.openweatherapp.data.local.data.mapper.WeatherForecastMapper
 import ru.kulishov.openweatherapp.data.remote.api.cityRequest
 import ru.kulishov.openweatherapp.data.remote.model.City
-import ru.kulishov.openweatherapp.data.remote.model.Clouds
 import ru.kulishov.openweatherapp.data.remote.model.Coord
 import ru.kulishov.openweatherapp.data.remote.model.Forecast
-import ru.kulishov.openweatherapp.data.remote.model.MainForecast
-import ru.kulishov.openweatherapp.data.remote.model.Sys
 import ru.kulishov.openweatherapp.data.remote.model.WeatherForecastResponse
-import ru.kulishov.openweatherapp.data.remote.model.Wind
 import ru.kulishov.openweatherapp.domain.model.SelectedCity
 import ru.kulishov.openweatherapp.domain.model.UiState
 import ru.kulishov.openweatherapp.domain.model.WeatherForecastResponceWithDateTime
@@ -39,44 +35,18 @@ class CityWeatherViewModel @Inject constructor(
     val insertCityWeatherUseCase: InsertCityWeatherUseCase,
     val retrofit: Retrofit
 ) : BaseViewModel() {
-    private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    private val _uiState = MutableLiveData<UiState>()
+    val uiState: LiveData<UiState> = _uiState
 
-    private val _cityName = MutableStateFlow<SelectedCity>(SelectedCity(0, "", ""))
-    val cityName: StateFlow<SelectedCity> = _cityName.asStateFlow()
+    private val _cityName = MutableLiveData<SelectedCity>()
+    val cityName: LiveData<SelectedCity> = _cityName
 
     private val _paramState = MutableLiveData<Int>()
     val paramState: LiveData<Int> = _paramState
 
 
-    private val _currentForecast = MutableStateFlow<Forecast>(
-        Forecast(
-            0,
-            MainForecast(
-                temp = 0.0,
-                feels_like = 0.0,
-                temp_min = 0.0,
-                temp_max = 0.0,
-                pressure = 0,
-                sea_level = null,
-                grnd_level = null,
-                humidity = 0,
-                temp_kf = 0.0
-            ),
-            weather = emptyList(),
-            clouds = Clouds(0),
-            wind = Wind(
-                speed = 0.0,
-                deg = 0,
-                gust = null
-            ),
-            visibility = 0,
-            pop = 0.0,
-            sys = Sys(""),
-            dt_txt = ""
-        )
-    )
-    val currentForecast: StateFlow<Forecast> = _currentForecast.asStateFlow()
+    private val _currentForecast = MutableLiveData<Forecast>()
+    val currentForecast: LiveData<Forecast> = _currentForecast
 
     private val _weatherForecat = MutableStateFlow<WeatherForecastResponceWithDateTime>(
         WeatherForecastResponceWithDateTime(
@@ -99,6 +69,7 @@ class CityWeatherViewModel @Inject constructor(
     )
     val weatherForecast: StateFlow<WeatherForecastResponceWithDateTime> =
         _weatherForecat.asStateFlow()
+
     private val _weatherListWithDate =
         MutableStateFlow<List<Pair<Int, MutableList<Forecast>>>>(emptyList())
     val weatherListWithDate: StateFlow<List<Pair<Int, MutableList<Forecast>>>> =
@@ -110,30 +81,32 @@ class CityWeatherViewModel @Inject constructor(
 
     private val _selectedDay = MutableStateFlow<Int>(LocalDateTime.now().dayOfMonth)
     val selecteDay: StateFlow<Int> = _selectedDay.asStateFlow()
+
+
     private val _selectedTime = MutableLiveData<Int>(LocalDateTime.now().hour)
     val selectedTime: LiveData<Int> = _selectedTime
 
     fun loadWeather(city: SelectedCity) {
         launch {
-            _cityName.value = city
-            _uiState.value = UiState.Loading
+            _cityName.postValue(city)
+            _uiState.postValue(UiState.Loading)
             try {
                 val weatherFromDb = getCityWeatherByNameUseCase(city.enName).firstOrNull()
                 if (weatherFromDb != null && weatherFromDb.isNotEmpty()) {
                     _weatherForecat.value = weatherFromDb.first()
                     val fForecast = findTodayCurrentHourForecast(weatherForecast.value.list)
                     if (fForecast != null) {
-                        _currentForecast.value = fForecast
+                        _currentForecast.postValue(fForecast)
                         sortedForecastForDate()
                     } else {
-                        _uiState.value = UiState.Error("Not data")
+                        _uiState.postValue(UiState.Error("Not data"))
                     }
                 }
                 val shouldUpdateFromApi = weatherFromDb!!.isEmpty() || shouldUpdateFromApi(
                     weatherFromDb.first().update
                 )
                 if (!shouldUpdateFromApi) {
-                    _uiState.value = UiState.Success
+                    _uiState.postValue(UiState.Success)
                     return@launch
                 }
 
@@ -147,12 +120,12 @@ class CityWeatherViewModel @Inject constructor(
                             updateDatabase(weather, weatherFromDb.isNotEmpty())
                             val fForecast = findTodayCurrentHourForecast(weatherForecast.value.list)
                             if (fForecast != null) {
-                                _currentForecast.value = fForecast
+                                _currentForecast.postValue(fForecast)
                                 sortedForecastForDate()
                             } else {
-                                _uiState.value = UiState.Error("Not data")
+                                _uiState.postValue(UiState.Error("Not data"))
                             }
-                            _uiState.value = UiState.Success
+                            _uiState.postValue(UiState.Success)
                         },
                         onFailure = { e ->
                             handleApiFailure(
@@ -168,7 +141,7 @@ class CityWeatherViewModel @Inject constructor(
                 }
 
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("Database error: ${e.message}")
+                _uiState.postValue(UiState.Error("Database error: ${e.message}"))
             }
         }
     }
@@ -240,9 +213,9 @@ class CityWeatherViewModel @Inject constructor(
         error: String
     ) {
         if (cachedWeather != null) {
-            _uiState.value = (UiState.InternetError(cachedWeather.update.toString()))
+            _uiState.postValue(UiState.InternetError(cachedWeather.update.toString()))
         } else {
-            _uiState.value = (UiState.Error("Network error: $error"))
+            _uiState.postValue(UiState.Error("Network error: $error"))
         }
     }
 
@@ -265,7 +238,7 @@ class CityWeatherViewModel @Inject constructor(
         val forecastTime = Instant.ofEpochMilli(forecast.dt * 1000 - 10800000 + 60000)
             .atZone(ZoneId.systemDefault())
             .toLocalDateTime()
-        _currentForecast.value = forecast
+        _currentForecast.postValue(forecast)
         setSelectedTime(forecastTime.hour)
     }
 
