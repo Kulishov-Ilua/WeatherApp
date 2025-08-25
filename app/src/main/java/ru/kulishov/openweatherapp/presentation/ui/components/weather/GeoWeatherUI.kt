@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -21,23 +22,55 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.kulishov.openweatherapp.R
+import ru.kulishov.openweatherapp.data.remote.model.Clouds
+import ru.kulishov.openweatherapp.data.remote.model.Forecast
+import ru.kulishov.openweatherapp.data.remote.model.MainForecast
+import ru.kulishov.openweatherapp.data.remote.model.Sys
+import ru.kulishov.openweatherapp.data.remote.model.Wind
 import ru.kulishov.openweatherapp.domain.model.UiState
 import ru.kulishov.openweatherapp.presentation.ui.components.app.ErrorMessageBoxUI
 import ru.kulishov.openweatherapp.presentation.viewmodel.weather.GeoWeatherViewModel
+import java.time.LocalDateTime
+import java.util.Collections
 
 @Composable
 fun GeoWeatherUi(
     viewModel: GeoWeatherViewModel
 ) {
-    val currentForecast = viewModel.currentForecast.collectAsState()
+    val currentForecast = viewModel.currentForecast.observeAsState(
+        Forecast(
+            0,
+            MainForecast(
+                temp = 0.0,
+                feels_like = 0.0,
+                temp_min = 0.0,
+                temp_max = 0.0,
+                pressure = 0,
+                sea_level = null,
+                grnd_level = null,
+                humidity = 0,
+                temp_kf = 0.0
+            ),
+            weather = Collections.emptyList(),
+            clouds = Clouds(0),
+            wind = Wind(
+                speed = 0.0,
+                deg = 0,
+                gust = null
+            ),
+            visibility = 0,
+            pop = 0.0,
+            sys = Sys(""),
+            dt_txt = ""
+        )
+    )
     val curentForecastList = viewModel.weatherListCurrentDayWithDate.collectAsState()
     val forecastList = viewModel.weatherListWithDate.collectAsState()
-    val selectedHour = viewModel.selectedTime.collectAsState()
+    val selectedHour = viewModel.selectedTime.observeAsState(LocalDateTime.now().hour)
     val selectedDay = viewModel.selecteDay.collectAsState()
-    val paramsState = viewModel.paramState.collectAsState()
-    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
+    val paramsState = viewModel.paramState.observeAsState(0)
+    val uiState = viewModel.uiState.observeAsState(UiState.Loading)
     val weatherResponse = viewModel.weatherForecast.collectAsState()
     when (uiState.value) {
         is UiState.locationEnabled -> {

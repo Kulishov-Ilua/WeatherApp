@@ -231,7 +231,7 @@ class CityWeatherViewModel @Inject constructor(
     }
 
     fun setSelectedTime(hour: Int) {
-        _selectedTime.postValue(hour)
+        _selectedTime.value = hour
     }
 
     fun updateCurrentForecast(forecast: Forecast) {
