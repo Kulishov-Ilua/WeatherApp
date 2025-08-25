@@ -19,7 +19,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -91,7 +90,8 @@ class MainActivity : ComponentActivity() {
                 cityViewModel.loadWeather(city)
                 Log.d(
                     "VM_data",
-                    cityViewModel.weatherListCurrentDayWithDate.collectAsState().toString()
+                    cityViewModel.weatherListCurrentDayWithDate.observeAsState(emptyList())
+                        .toString()
                 )
                 cityViewModel
             }

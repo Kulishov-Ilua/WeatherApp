@@ -15,7 +15,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +58,7 @@ fun SelectedCityScreen(
         ) {
             items(citiesVM) { VM ->
                 val name = VM.cityName.observeAsState(SelectedCity(0, "", ""))
-                Log.d("VM_data", VM.weatherListCurrentDayWithDate.collectAsState().toString())
+                Log.d("VM_data", VM.weatherListCurrentDayWithDate.observeAsState().toString())
                 CityCardUI(
                     viewModel = VM,
                     onTap = {

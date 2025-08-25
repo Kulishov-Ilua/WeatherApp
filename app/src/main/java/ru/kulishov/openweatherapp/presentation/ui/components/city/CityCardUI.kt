@@ -16,7 +16,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +41,7 @@ fun CityCardUI(
     viewModel: CityWeatherViewModel,
     onTap: () -> Unit
 ) {
-    val curentForecastList = viewModel.weatherListCurrentDayWithDate.collectAsState()
+    val curentForecastList = viewModel.weatherListCurrentDayWithDate.observeAsState(emptyList())
     val uiState = viewModel.uiState.observeAsState(UiState.Loading)
     val cityName = viewModel.cityName.observeAsState(SelectedCity(0, "", ""))
     Box(

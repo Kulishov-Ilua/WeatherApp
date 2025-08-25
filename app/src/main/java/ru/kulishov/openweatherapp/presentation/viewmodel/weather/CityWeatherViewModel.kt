@@ -4,15 +4,10 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import retrofit2.Retrofit
 import ru.kulishov.openweatherapp.data.local.data.mapper.WeatherForecastMapper
 import ru.kulishov.openweatherapp.data.remote.api.cityRequest
-import ru.kulishov.openweatherapp.data.remote.model.City
-import ru.kulishov.openweatherapp.data.remote.model.Coord
 import ru.kulishov.openweatherapp.data.remote.model.Forecast
 import ru.kulishov.openweatherapp.data.remote.model.WeatherForecastResponse
 import ru.kulishov.openweatherapp.domain.model.SelectedCity
@@ -47,44 +42,20 @@ class CityWeatherViewModel @Inject constructor(
 
     private val _currentForecast = MutableLiveData<Forecast>()
     val currentForecast: LiveData<Forecast> = _currentForecast
-
-    private val _weatherForecat = MutableStateFlow<WeatherForecastResponceWithDateTime>(
-        WeatherForecastResponceWithDateTime(
-            cod = "",
-            message = 0,
-            cnt = 0,
-            list = emptyList(),
-            city = City(
-                id = 0,
-                name = "",
-                coord = Coord(0.0, 0.0),
-                country = "",
-                population = 0,
-                timezone = 0,
-                sunrise = 0,
-                sunset = 0
-            ),
-            update = 0
-        )
-    )
-    val weatherForecast: StateFlow<WeatherForecastResponceWithDateTime> =
-        _weatherForecat.asStateFlow()
-
-    private val _weatherListWithDate =
-        MutableStateFlow<List<Pair<Int, MutableList<Forecast>>>>(emptyList())
-    val weatherListWithDate: StateFlow<List<Pair<Int, MutableList<Forecast>>>> =
-        _weatherListWithDate.asStateFlow()
-
-    private val _weatherListCurrentDayWithDate = MutableStateFlow<List<Forecast>>(emptyList())
-    val weatherListCurrentDayWithDate: StateFlow<List<Forecast>> =
-        _weatherListCurrentDayWithDate.asStateFlow()
-
-    private val _selectedDay = MutableStateFlow<Int>(LocalDateTime.now().dayOfMonth)
-    val selecteDay: StateFlow<Int> = _selectedDay.asStateFlow()
-
-
     private val _selectedTime = MutableLiveData<Int>(LocalDateTime.now().hour)
     val selectedTime: LiveData<Int> = _selectedTime
+
+    private val _weatherForecast = MutableLiveData<WeatherForecastResponceWithDateTime>()
+    val weatherForecast: LiveData<WeatherForecastResponceWithDateTime> = _weatherForecast
+
+    private val _weatherListWithDate = MutableLiveData<List<Pair<Int, List<Forecast>>>>()
+    val weatherListWithDate: LiveData<List<Pair<Int, List<Forecast>>>> = _weatherListWithDate
+
+    private val _weatherListCurrentDayWithDate = MutableLiveData<List<Forecast>>()
+    val weatherListCurrentDayWithDate: LiveData<List<Forecast>> = _weatherListCurrentDayWithDate
+
+    private val _selectedDay = MutableLiveData<Int>(LocalDateTime.now().dayOfMonth)
+    val selectedDay: LiveData<Int> = _selectedDay
 
     fun loadWeather(city: SelectedCity) {
         launch {
@@ -93,8 +64,8 @@ class CityWeatherViewModel @Inject constructor(
             try {
                 val weatherFromDb = getCityWeatherByNameUseCase(city.enName).firstOrNull()
                 if (weatherFromDb != null && weatherFromDb.isNotEmpty()) {
-                    _weatherForecat.value = weatherFromDb.first()
-                    val fForecast = findTodayCurrentHourForecast(weatherForecast.value.list)
+                    _weatherForecast.value = weatherFromDb.first()
+                    val fForecast = findTodayCurrentHourForecast(weatherForecast.value!!.list)
                     if (fForecast != null) {
                         _currentForecast.postValue(fForecast)
                         sortedForecastForDate()
@@ -116,9 +87,10 @@ class CityWeatherViewModel @Inject constructor(
                         city = city.enName,
                         onSuccess = { weather ->
                             val forecast = WeatherForecastMapper.toForecastWithDate(weather)
-                            _weatherForecat.value = forecast
+                            _weatherForecast.value = forecast
                             updateDatabase(weather, weatherFromDb.isNotEmpty())
-                            val fForecast = findTodayCurrentHourForecast(weatherForecast.value.list)
+                            val fForecast =
+                                findTodayCurrentHourForecast(weatherForecast.value!!.list)
                             if (fForecast != null) {
                                 _currentForecast.postValue(fForecast)
                                 sortedForecastForDate()
@@ -145,7 +117,6 @@ class CityWeatherViewModel @Inject constructor(
             }
         }
     }
-
 
     private fun shouldUpdateFromApi(lastUpdate: Long?): Boolean {
         if (lastUpdate == null) return true
@@ -183,29 +154,21 @@ class CityWeatherViewModel @Inject constructor(
     }
 
     fun sortedForecastForDate() {
-        _weatherListWithDate.value = emptyList()
-        _weatherListCurrentDayWithDate.value = emptyList()
-        for (x in weatherForecast.value.list) {
-            val date = Instant.ofEpochMilli(x.dt * 1000 - 10800000 + 60000)
+        val forecastList = weatherForecast.value?.list ?: return
+        val selectedDayValue = _selectedDay.value ?: LocalDateTime.now().dayOfMonth
+
+        val groupedByDay = forecastList.groupBy { forecast ->
+            Instant.ofEpochMilli(forecast.dt * 1000 - 10800000 + 60000)
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime()
-            val dayFind = _weatherListWithDate.value.find { it ->
-                it.first == date.dayOfMonth
-            }
-            if (date.dayOfMonth == selecteDay.value) {
-                _weatherListCurrentDayWithDate.value += x
-            }
-
-            if (dayFind == null) {
-                _weatherListWithDate.value += Pair(
-                    date.dayOfMonth, mutableListOf(
-                        x
-                    )
-                )
-            } else {
-                dayFind.second += x
-            }
+                .dayOfMonth
         }
+
+        _weatherListWithDate.value = groupedByDay.entries.map { (day, forecasts) ->
+            Pair(day, forecasts)
+        }
+
+        _weatherListCurrentDayWithDate.value = groupedByDay[selectedDayValue] ?: emptyList()
     }
 
     private fun handleApiFailure(
