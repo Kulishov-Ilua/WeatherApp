@@ -89,6 +89,10 @@ class MainActivity : ComponentActivity() {
                     key = "city_${city.id}_$index"
                 )
                 cityViewModel.loadWeather(city)
+                Log.d(
+                    "VM_data",
+                    cityViewModel.weatherListCurrentDayWithDate.collectAsState().toString()
+                )
                 cityViewModel
             }
 

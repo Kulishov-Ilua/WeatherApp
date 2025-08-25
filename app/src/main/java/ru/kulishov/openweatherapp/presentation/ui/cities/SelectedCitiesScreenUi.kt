@@ -1,5 +1,6 @@
 package ru.kulishov.openweatherapp.presentation.ui.cities
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,7 +57,7 @@ fun SelectedCityScreen(
         ) {
             items(citiesVM) { VM ->
                 val name = VM.cityName.collectAsState()
-
+                Log.d("VM_data", VM.weatherListCurrentDayWithDate.collectAsState().toString())
                 CityCardUI(
                     viewModel = VM,
                     onTap = {

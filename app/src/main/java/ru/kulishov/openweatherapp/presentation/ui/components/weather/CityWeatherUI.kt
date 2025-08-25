@@ -25,7 +25,7 @@ fun CityWeatherUI(
     val curentForecastList = viewModel.weatherListCurrentDayWithDate.collectAsState()
     val forecastList = viewModel.weatherListWithDate.collectAsState()
     val selectedHour = viewModel.selectedTime.observeAsState(LocalDateTime.now().hour)
-    val selectedDay = viewModel.selecteDay.observeAsState(LocalDateTime.now().dayOfMonth)
+    val selectedDay = viewModel.selecteDay.collectAsState()
     val paramsState = viewModel.paramState.observeAsState(0)
     val uiState = viewModel.uiState.collectAsState()
     when (uiState.value) {

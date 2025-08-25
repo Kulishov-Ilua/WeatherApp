@@ -108,15 +108,15 @@ class CityWeatherViewModel @Inject constructor(
     val weatherListCurrentDayWithDate: StateFlow<List<Forecast>> =
         _weatherListCurrentDayWithDate.asStateFlow()
 
-    private val _selectedDay = MutableLiveData<Int>()
-    val selecteDay: LiveData<Int> = _selectedDay
+    private val _selectedDay = MutableStateFlow<Int>(LocalDateTime.now().dayOfMonth)
+    val selecteDay: StateFlow<Int> = _selectedDay.asStateFlow()
     private val _selectedTime = MutableLiveData<Int>(LocalDateTime.now().hour)
     val selectedTime: LiveData<Int> = _selectedTime
 
     fun loadWeather(city: SelectedCity) {
         launch {
             _cityName.value = city
-            _uiState.value =(UiState.Loading)
+            _uiState.value = UiState.Loading
             try {
                 val weatherFromDb = getCityWeatherByNameUseCase(city.enName).firstOrNull()
                 if (weatherFromDb != null && weatherFromDb.isNotEmpty()) {
@@ -126,14 +126,14 @@ class CityWeatherViewModel @Inject constructor(
                         _currentForecast.value = fForecast
                         sortedForecastForDate()
                     } else {
-                        _uiState.value = (UiState.Error("Not data"))
+                        _uiState.value = UiState.Error("Not data")
                     }
                 }
                 val shouldUpdateFromApi = weatherFromDb!!.isEmpty() || shouldUpdateFromApi(
                     weatherFromDb.first().update
                 )
                 if (!shouldUpdateFromApi) {
-                    _uiState.value = (UiState.Success)
+                    _uiState.value = UiState.Success
                     return@launch
                 }
 
@@ -150,9 +150,9 @@ class CityWeatherViewModel @Inject constructor(
                                 _currentForecast.value = fForecast
                                 sortedForecastForDate()
                             } else {
-                                _uiState.value = (UiState.Error("Not data"))
+                                _uiState.value = UiState.Error("Not data")
                             }
-                            _uiState.value = (UiState.Success)
+                            _uiState.value = UiState.Success
                         },
                         onFailure = { e ->
                             handleApiFailure(
@@ -168,7 +168,7 @@ class CityWeatherViewModel @Inject constructor(
                 }
 
             } catch (e: Exception) {
-                _uiState.value = (UiState.Error("Database error: ${e.message}"))
+                _uiState.value = UiState.Error("Database error: ${e.message}")
             }
         }
     }
