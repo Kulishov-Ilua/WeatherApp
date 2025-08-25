@@ -20,8 +20,6 @@ import com.google.android.gms.tasks.CancellationTokenSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import retrofit2.Retrofit
 import ru.kulishov.openweatherapp.data.local.data.mapper.WeatherForecastMapper
 import ru.kulishov.openweatherapp.data.remote.api.geoRequest
@@ -77,22 +75,17 @@ class GeoWeatherViewModel @Inject constructor(
             update = 0
         )
     )
-    val weatherForecast: StateFlow<WeatherForecastResponceWithDateTime> =
-        _weatherForecat.asStateFlow()
+    private val _weatherForecast = MutableLiveData<WeatherForecastResponceWithDateTime>()
+    val weatherForecast: LiveData<WeatherForecastResponceWithDateTime> = _weatherForecast
 
-    private val _weatherListWithDate = MutableStateFlow<List<Pair<Int, MutableList<Forecast>>>>(
-        Collections.emptyList()
-    )
-    val weatherListWithDate: StateFlow<List<Pair<Int, MutableList<Forecast>>>> =
-        _weatherListWithDate.asStateFlow()
+    private val _weatherListWithDate = MutableLiveData<List<Pair<Int, List<Forecast>>>>()
+    val weatherListWithDate: LiveData<List<Pair<Int, List<Forecast>>>> = _weatherListWithDate
 
-    private val _weatherListCurrentDayWithDate =
-        MutableStateFlow<List<Forecast>>(Collections.emptyList())
-    val weatherListCurrentDayWithDate: StateFlow<List<Forecast>> =
-        _weatherListCurrentDayWithDate.asStateFlow()
+    private val _weatherListCurrentDayWithDate = MutableLiveData<List<Forecast>>()
+    val weatherListCurrentDayWithDate: LiveData<List<Forecast>> = _weatherListCurrentDayWithDate
 
-    private val _selectedDay = MutableStateFlow<Int>(LocalDateTime.now().dayOfMonth)
-    val selecteDay: StateFlow<Int> = _selectedDay.asStateFlow()
+    private val _selectedDay = MutableLiveData<Int>(LocalDateTime.now().dayOfMonth)
+    val selectedDay: LiveData<Int> = _selectedDay
     private val _selectedTime = MutableLiveData<Int>(LocalDateTime.now().hour)
     val selectedTime: LiveData<Int> = _selectedTime
 
@@ -178,18 +171,16 @@ class GeoWeatherViewModel @Inject constructor(
                         lon = lon,
                         onSuccess = { weather ->
                             val forecast = WeatherForecastMapper.toForecastWithDate(weather)
-                            _weatherForecat.value = forecast
-
-                            val fForecast = findTodayCurrentHourForecast(weatherForecast.value.list)
+                            _weatherForecast.value = forecast
+                            val fForecast =
+                                findTodayCurrentHourForecast(weatherForecast.value!!.list)
                             if (fForecast != null) {
                                 _currentForecast.postValue(fForecast)
-                                onWeatherUpdated(fForecast)
                                 sortedForecastForDate()
                             } else {
                                 _uiState.postValue(UiState.Error("Not data"))
                             }
                             _uiState.postValue(UiState.Success)
-
                         },
                         onFailure = { e ->
                             _uiState.postValue(UiState.InternetError(""))
@@ -220,28 +211,32 @@ class GeoWeatherViewModel @Inject constructor(
     }
 
     fun sortedForecastForDate() {
-        _weatherListWithDate.value = Collections.emptyList()
-        _weatherListCurrentDayWithDate.value = Collections.emptyList()
-        for (x in weatherForecast.value.list) {
-            val date = Instant.ofEpochMilli(x.dt * 1000 - 10800000 + 60000)
+        val forecastList = weatherForecast.value?.list ?: return
+        val selectedDayValue = _selectedDay.value ?: LocalDateTime.now().dayOfMonth
+
+        val groupedByDay = forecastList.groupBy { forecast ->
+            Instant.ofEpochMilli(forecast.dt * 1000 - 10800000 + 60000)
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime()
-            val dayFind = _weatherListWithDate.value.find { it ->
-                it.first == date.dayOfMonth
-            }
-            if (date.dayOfMonth == selecteDay.value) {
-                _weatherListCurrentDayWithDate.value += x
-            }
+                .dayOfMonth
+        }
 
-            if (dayFind == null) {
-                _weatherListWithDate.value += Pair(
-                    date.dayOfMonth, mutableListOf(
-                        x
-                    )
-                )
-            } else {
-                dayFind.second += x
-            }
+        _weatherListWithDate.value = groupedByDay.entries.map { (day, forecasts) ->
+            Pair(day, forecasts)
+        }
+
+        _weatherListCurrentDayWithDate.value =
+            groupedByDay[selectedDayValue] ?: Collections.emptyList()
+    }
+
+    private fun handleApiFailure(
+        cachedWeather: WeatherForecastResponceWithDateTime?,
+        error: String
+    ) {
+        if (cachedWeather != null) {
+            _uiState.postValue(UiState.InternetError(cachedWeather.update.toString()))
+        } else {
+            _uiState.postValue(UiState.Error("Network error: $error"))
         }
     }
 

@@ -13,7 +13,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,13 +64,12 @@ fun GeoWeatherUi(
             dt_txt = ""
         )
     )
-    val curentForecastList = viewModel.weatherListCurrentDayWithDate.collectAsState()
-    val forecastList = viewModel.weatherListWithDate.collectAsState()
+    val curentForecastList = viewModel.weatherListCurrentDayWithDate.observeAsState(emptyList())
+    val forecastList = viewModel.weatherListWithDate.observeAsState(emptyList())
     val selectedHour = viewModel.selectedTime.observeAsState(LocalDateTime.now().hour)
-    val selectedDay = viewModel.selecteDay.collectAsState()
+    val selectedDay = viewModel.selectedDay.observeAsState(LocalDateTime.now().dayOfMonth)
     val paramsState = viewModel.paramState.observeAsState(0)
     val uiState = viewModel.uiState.observeAsState(UiState.Loading)
-    val weatherResponse = viewModel.weatherForecast.collectAsState()
     when (uiState.value) {
         is UiState.locationEnabled -> {
             Column(
