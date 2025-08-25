@@ -1,5 +1,6 @@
 package ru.kulishov.openweatherapp.presentation.ui.cities
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -22,11 +23,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import retrofit2.Retrofit
 import ru.kulishov.openweatherapp.R
-import ru.kulishov.openweatherapp.domain.usecase.weather.GetCityWeatherByNameUseCase
-import ru.kulishov.openweatherapp.domain.usecase.weather.InsertCityWeatherUseCase
-import ru.kulishov.openweatherapp.domain.usecase.weather.UpdateCityWeatherUseCase
+import ru.kulishov.openweatherapp.domain.model.SelectedCity
 import ru.kulishov.openweatherapp.presentation.ui.components.city.CityCardUI
 import ru.kulishov.openweatherapp.presentation.ui.components.city.FindCitiesField
 import ru.kulishov.openweatherapp.presentation.viewmodel.cities.CitiesScreenViewModel
@@ -59,7 +57,8 @@ fun SelectedCityScreen(
             verticalArrangement = Arrangement.spacedBy(15.dp)
         ) {
             items(citiesVM) { VM ->
-                val name = VM.cityName.collectAsState()
+                val name = VM.cityName.observeAsState(SelectedCity(0, "", ""))
+                Log.d("VM_data", VM.weatherListCurrentDayWithDate.observeAsState().toString())
                 CityCardUI(
                     viewModel = VM,
                     onTap = {

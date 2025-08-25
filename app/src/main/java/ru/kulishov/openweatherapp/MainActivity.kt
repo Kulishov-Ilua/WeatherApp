@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.LocationManager
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,8 +19,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -80,17 +81,23 @@ class MainActivity : ComponentActivity() {
             val weatherNavigationViewModel: WeatherNavigationViewModel = hiltViewModel()
             val authScreenViewModel: AuthScreenViewModel = hiltViewModel()
 
-            val cities = selectedCityScreenViewModel.selectedCities.collectAsState()
-            val citiesVM = cities.value.mapIndexed { index, city ->
+            val cities by selectedCityScreenViewModel.selectedCities.observeAsState(emptyList())
+            val citiesVM = cities.mapIndexed { index, city ->
+                Log.d("Flow", city.localName)
                 val cityViewModel: CityWeatherViewModel = hiltViewModel(
                     key = "city_${city.id}_$index"
                 )
                 cityViewModel.loadWeather(city)
+                Log.d(
+                    "VM_data",
+                    cityViewModel.weatherListCurrentDayWithDate.observeAsState(emptyList())
+                        .toString()
+                )
                 cityViewModel
             }
 
-            val authState = authScreenViewModel.uiState.collectAsState()
-            val otpState = authScreenViewModel.otpState.collectAsState()
+            val authState = authScreenViewModel.uiState.observeAsState(UiState.locationEnabled)
+            val otpState = authScreenViewModel.otpState.observeAsState(false)
 
             val geoWeatherViewModel = GeoWeatherViewModel(
                 retrofit = retrofit,

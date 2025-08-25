@@ -1,10 +1,9 @@
 package ru.kulishov.openweatherapp.presentation.viewmodel.cities
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import ru.kulishov.openweatherapp.domain.model.SelectedCity
 import ru.kulishov.openweatherapp.domain.model.UiState
@@ -16,27 +15,27 @@ import javax.inject.Inject
 class CitySearchViewModel @Inject constructor(
     val findCityUseCase: FindCityUseCase
 ) : BaseViewModel() {
-    private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    private val _uiState = MutableLiveData<UiState>(UiState.Loading)
+    val uiState: LiveData<UiState> = _uiState
 
     private val debouncePeriod = 300L
-    private val _findName = MutableStateFlow<String>("")
-    val findName: StateFlow<String> = _findName.asStateFlow()
+    private val _findName = MutableLiveData<String>("")
+    val findName: LiveData<String> = _findName
 
-    private val _findCities = MutableStateFlow<List<SelectedCity>>(emptyList())
-    val findCities: StateFlow<List<SelectedCity>> = _findCities.asStateFlow()
+    private val _findCities = MutableLiveData<List<SelectedCity>>(emptyList())
+    val findCities: LiveData<List<SelectedCity>> = _findCities
 
     fun setName(name: String) {
-        _findName.value = name
+        _findName.postValue(name)
         launch {
             delay(300)
             if (_findName.value == name) {
                 findCityUseCase(name).catch { e ->
-                    _uiState.value = UiState.Error(e.message ?: "Unknow error")
+                    _uiState.postValue(UiState.Error(e.message ?: "Unknow error"))
                 }
                     .collect { cities ->
-                        _findCities.value = cities
-                        _uiState.value = UiState.Success
+                        _findCities.postValue(cities)
+                        _uiState.postValue(UiState.Success)
                     }
             }
         }
@@ -49,12 +48,12 @@ class CitySearchViewModel @Inject constructor(
             delay(300)
             if (_findName.value == name) {
                 findCityUseCase(name).catch { e ->
-                    _uiState.value = UiState.Error(e.message ?: "Unknow error")
+                    _uiState.postValue(UiState.Error(e.message ?: "Unknow error"))
                 }
                     .collect { cities ->
 
-                        _findCities.value = cities
-                        _uiState.value = UiState.Success
+                        _findCities.postValue(cities)
+                        _uiState.postValue(UiState.Success)
                     }
             }
         }

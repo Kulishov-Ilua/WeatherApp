@@ -18,7 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,8 +38,8 @@ fun FindCitiesField(
     viewModel: CitySearchViewModel,
     onTap: (SelectedCity) -> Unit
 ) {
-    val text = viewModel.findName.collectAsState()
-    val cities = viewModel.findCities.collectAsState()
+    val text = viewModel.findName.observeAsState("")
+    val cities = viewModel.findCities.observeAsState(emptyList())
     val boxHeight = animateDpAsState(
         targetValue = if (cities.value.isNotEmpty()) 200.dp
         else 70.dp
