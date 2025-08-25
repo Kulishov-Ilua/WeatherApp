@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -32,9 +32,9 @@ fun WeatherScreenUi(
     weatherNavigationViewModel: WeatherNavigationViewModel,
     cityWeatherViewModel: CityWeatherViewModel
 ) {
-    val selectedCities = weatherNavigationViewModel.selectedCities.collectAsState()
-    val currentPage = weatherNavigationViewModel.currentPage.collectAsState()
-    val isSwipeBlocked = weatherNavigationViewModel.isSwipeBlocked.collectAsState()
+    val selectedCities = weatherNavigationViewModel.selectedCities.observeAsState(emptyList())
+    val currentPage = weatherNavigationViewModel.currentPage.observeAsState(0)
+    val isSwipeBlocked = weatherNavigationViewModel.isSwipeBlocked.observeAsState(false)
     Box(
         Modifier
             .fillMaxSize()

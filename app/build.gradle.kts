@@ -98,6 +98,11 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
 
 
+    implementation("androidx.compose.runtime:runtime-livedata:1.9.0")
+    implementation("androidx.compose.ui:ui:1.9.0")
+    implementation("androidx.compose.ui:ui-tooling:1.9.0")
+    implementation("androidx.compose.foundation:foundation:1.9.0")
+    implementation("androidx.compose.material:material:1.9.0")
 }
 
 room {

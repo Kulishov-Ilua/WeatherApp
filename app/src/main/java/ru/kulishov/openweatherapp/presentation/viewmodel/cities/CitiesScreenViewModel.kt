@@ -1,9 +1,10 @@
 package ru.kulishov.openweatherapp.presentation.viewmodel.cities
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.catch
 import ru.kulishov.openweatherapp.domain.model.SelectedCity
 import ru.kulishov.openweatherapp.domain.model.UiState
@@ -19,11 +20,11 @@ class CitiesScreenViewModel @Inject constructor(
     private val insertSelectedCityUseCase: InsertSelectedCityUseCase,
     private val deleteSelectedCity: DeleteSelectedCityUseCase
 ) : BaseViewModel() {
-    private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    private val _uiState = MutableSharedFlow<UiState>()
+    val uiState: Flow<UiState> = _uiState
 
-    private val _selectedCities = MutableStateFlow<List<SelectedCity>>(emptyList())
-    val selectedCities: StateFlow<List<SelectedCity>> = _selectedCities.asStateFlow()
+    private val _selectedCities = MutableLiveData<List<SelectedCity>>()
+    val selectedCities: LiveData<List<SelectedCity>> = _selectedCities
 
     init {
         loadSelectedCities()
@@ -33,44 +34,45 @@ class CitiesScreenViewModel @Inject constructor(
         launch {
             getSelectedCityUseCase()
                 .catch { e ->
-                    _uiState.value = UiState.Error(e.message ?: "Unknow error")
+                    _uiState.emit(UiState.Error(e.message ?: "Unknow error"))
                 }
                 .collect { cities ->
-                    _selectedCities.value = cities
-                    _uiState.value = UiState.Success
+                    _selectedCities.postValue(cities)
+                    _uiState.emit(UiState.Success)
                 }
         }
     }
 
     fun deleteSelectedCities(city: SelectedCity) {
         launch {
-            _uiState.value = UiState.Loading
+            _uiState.emit(UiState.Loading)
             try {
-                val containsCity = selectedCities.value.any { it.enName == city.enName }
+                val currentCities = _selectedCities.value ?: emptyList()
+                val containsCity = currentCities.any { it.enName == city.enName }
                 if (containsCity) {
                     deleteSelectedCity(city)
-                    _selectedCities.value = selectedCities.value - city
+                    _selectedCities.postValue(currentCities - city)
                 }
-                _uiState.value = UiState.Success
+                _uiState.emit(UiState.Success)
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(e.message ?: "Failed to add event")
+                _uiState.emit(UiState.Error(e.message ?: "Failed to add event"))
             }
         }
     }
 
     fun insertSelectedCities(city: SelectedCity) {
         launch {
-            _uiState.value = UiState.Loading
+            _uiState.emit(UiState.Loading)
             try {
-                val containsCity = selectedCities.value.any { it.enName == city.enName }
-
+                val currentCities = _selectedCities.value ?: emptyList()
+                val containsCity = currentCities.any { it.enName == city.enName }
                 if (!containsCity) {
-                    val a = insertSelectedCityUseCase(city)
-                    _selectedCities.value = selectedCities.value + city
+                    insertSelectedCityUseCase(city)
+                    _selectedCities.postValue(currentCities + city)
                 }
-                _uiState.value = UiState.Success
+                _uiState.emit(UiState.Success)
             } catch (e: Exception) {
-                _uiState.value = UiState.Error(e.message ?: "Failed to add event")
+                _uiState.emit(UiState.Error(e.message ?: "Failed to add event"))
             }
         }
     }

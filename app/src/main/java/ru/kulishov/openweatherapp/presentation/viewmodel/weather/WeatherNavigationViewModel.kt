@@ -1,10 +1,9 @@
 package ru.kulishov.openweatherapp.presentation.viewmodel.weather
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import ru.kulishov.openweatherapp.domain.model.SelectedCity
 import ru.kulishov.openweatherapp.domain.model.UiState
@@ -17,16 +16,16 @@ class WeatherNavigationViewModel @Inject constructor(
     private val getSelectedCityUseCase: GetSelectedCityUseCase
 ) : BaseViewModel() {
     private val _uiState =
-        MutableStateFlow<UiState>(UiState.Loading)
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
-    private val _selectedCities = MutableStateFlow<List<SelectedCity>>(emptyList())
-    val selectedCities: StateFlow<List<SelectedCity>> = _selectedCities.asStateFlow()
+        MutableLiveData<UiState>()
+    val uiState: LiveData<UiState> = _uiState
+    private val _selectedCities = MutableLiveData<List<SelectedCity>>()
+    val selectedCities: LiveData<List<SelectedCity>> = _selectedCities
 
-    private val _currentPage = MutableStateFlow<Int>(0)
-    val currentPage: StateFlow<Int> = _currentPage.asStateFlow()
+    private val _currentPage = MutableLiveData<Int>()
+    val currentPage: LiveData<Int> = _currentPage
 
-    private val _isSwipeBlocked = MutableStateFlow<Boolean>(false)
-    val isSwipeBlocked: StateFlow<Boolean> = _isSwipeBlocked.asStateFlow()
+    private val _isSwipeBlocked = MutableLiveData<Boolean>()
+    val isSwipeBlocked: LiveData<Boolean> = _isSwipeBlocked
 
 
     init {
@@ -37,26 +36,27 @@ class WeatherNavigationViewModel @Inject constructor(
         launch {
             getSelectedCityUseCase()
                 .catch { e ->
-                    _uiState.value =
+                    _uiState.postValue(
                         UiState.Error(e.message ?: "Unknow error")
+                    )
                 }
                 .collect { cities ->
-                    _selectedCities.value = cities
-                    _uiState.value = UiState.Success
+                    _selectedCities.postValue(cities)
+                    _uiState.postValue(UiState.Success)
                 }
         }
     }
 
     fun pageChanged(id: Int) {
-        _currentPage.value = id
+        _currentPage.postValue(id)
 
     }
 
     fun blockedSwipe() {
         launch {
-            _isSwipeBlocked.value = true
+            _isSwipeBlocked.postValue(true)
             delay(300)
-            _isSwipeBlocked.value = false
+            _isSwipeBlocked.postValue(false)
         }
     }
 

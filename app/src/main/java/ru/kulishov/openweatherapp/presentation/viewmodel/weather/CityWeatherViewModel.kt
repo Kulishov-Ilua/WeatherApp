@@ -1,6 +1,8 @@
 package ru.kulishov.openweatherapp.presentation.viewmodel.weather
 
 import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,8 +45,8 @@ class CityWeatherViewModel @Inject constructor(
     private val _cityName = MutableStateFlow<SelectedCity>(SelectedCity(0, "", ""))
     val cityName: StateFlow<SelectedCity> = _cityName.asStateFlow()
 
-    private val _paramState = MutableStateFlow<Int>(0)
-    val paramState: StateFlow<Int> = _paramState.asStateFlow()
+    private val _paramState = MutableLiveData<Int>()
+    val paramState: LiveData<Int> = _paramState
 
 
     private val _currentForecast = MutableStateFlow<Forecast>(
@@ -106,15 +108,15 @@ class CityWeatherViewModel @Inject constructor(
     val weatherListCurrentDayWithDate: StateFlow<List<Forecast>> =
         _weatherListCurrentDayWithDate.asStateFlow()
 
-    private val _selectedDay = MutableStateFlow<Int>(LocalDateTime.now().dayOfMonth)
-    val selecteDay: StateFlow<Int> = _selectedDay.asStateFlow()
-    private val _selectedTime = MutableStateFlow<Int>(LocalDateTime.now().hour)
-    val selectedTime: StateFlow<Int> = _selectedTime.asStateFlow()
+    private val _selectedDay = MutableLiveData<Int>()
+    val selecteDay: LiveData<Int> = _selectedDay
+    private val _selectedTime = MutableLiveData<Int>(LocalDateTime.now().hour)
+    val selectedTime: LiveData<Int> = _selectedTime
 
     fun loadWeather(city: SelectedCity) {
         launch {
             _cityName.value = city
-            _uiState.value = UiState.Loading
+            _uiState.value =(UiState.Loading)
             try {
                 val weatherFromDb = getCityWeatherByNameUseCase(city.enName).firstOrNull()
                 if (weatherFromDb != null && weatherFromDb.isNotEmpty()) {
@@ -124,14 +126,14 @@ class CityWeatherViewModel @Inject constructor(
                         _currentForecast.value = fForecast
                         sortedForecastForDate()
                     } else {
-                        _uiState.value = UiState.Error("Not data")
+                        _uiState.value = (UiState.Error("Not data"))
                     }
                 }
                 val shouldUpdateFromApi = weatherFromDb!!.isEmpty() || shouldUpdateFromApi(
                     weatherFromDb.first().update
                 )
                 if (!shouldUpdateFromApi) {
-                    _uiState.value = UiState.Success
+                    _uiState.value = (UiState.Success)
                     return@launch
                 }
 
@@ -148,9 +150,9 @@ class CityWeatherViewModel @Inject constructor(
                                 _currentForecast.value = fForecast
                                 sortedForecastForDate()
                             } else {
-                                _uiState.value = UiState.Error("Not data")
+                                _uiState.value = (UiState.Error("Not data"))
                             }
-                            _uiState.value = UiState.Success
+                            _uiState.value = (UiState.Success)
                         },
                         onFailure = { e ->
                             handleApiFailure(
@@ -166,7 +168,7 @@ class CityWeatherViewModel @Inject constructor(
                 }
 
             } catch (e: Exception) {
-                _uiState.value = UiState.Error("Database error: ${e.message}")
+                _uiState.value = (UiState.Error("Database error: ${e.message}"))
             }
         }
     }
@@ -238,23 +240,25 @@ class CityWeatherViewModel @Inject constructor(
         error: String
     ) {
         if (cachedWeather != null) {
-            _uiState.value = UiState.InternetError(cachedWeather.update.toString())
+            _uiState.value = (UiState.InternetError(cachedWeather.update.toString()))
         } else {
-            _uiState.value = UiState.Error("Network error: $error")
+            _uiState.value = (UiState.Error("Network error: $error"))
         }
     }
 
     fun setParamState(state: Int) {
-        _paramState.value = state
+        _paramState.postValue(state)
     }
 
     fun setSelectedDay(day: Int) {
         _selectedDay.value = day
         sortedForecastForDate()
+
+
     }
 
     fun setSelectedTime(hour: Int) {
-        _selectedTime.value = hour
+        _selectedTime.postValue(hour)
     }
 
     fun updateCurrentForecast(forecast: Forecast) {

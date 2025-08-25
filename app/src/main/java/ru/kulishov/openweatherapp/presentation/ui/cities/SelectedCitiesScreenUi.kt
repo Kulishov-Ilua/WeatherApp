@@ -22,11 +22,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import retrofit2.Retrofit
 import ru.kulishov.openweatherapp.R
-import ru.kulishov.openweatherapp.domain.usecase.weather.GetCityWeatherByNameUseCase
-import ru.kulishov.openweatherapp.domain.usecase.weather.InsertCityWeatherUseCase
-import ru.kulishov.openweatherapp.domain.usecase.weather.UpdateCityWeatherUseCase
 import ru.kulishov.openweatherapp.presentation.ui.components.city.CityCardUI
 import ru.kulishov.openweatherapp.presentation.ui.components.city.FindCitiesField
 import ru.kulishov.openweatherapp.presentation.viewmodel.cities.CitiesScreenViewModel
@@ -60,6 +56,7 @@ fun SelectedCityScreen(
         ) {
             items(citiesVM) { VM ->
                 val name = VM.cityName.collectAsState()
+
                 CityCardUI(
                     viewModel = VM,
                     onTap = {
