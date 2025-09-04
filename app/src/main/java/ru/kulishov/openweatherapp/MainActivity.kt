@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
                 cityViewModel
             }
 
-            val authState = authScreenViewModel.uiState.observeAsState(UiState.locationEnabled)
+            val authState = authScreenViewModel.uiState.observeAsState(UiState.Success)
             val otpState = authScreenViewModel.otpState.observeAsState(false)
 
             val geoWeatherViewModel = GeoWeatherViewModel(
